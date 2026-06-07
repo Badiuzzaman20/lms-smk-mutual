@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: lms-smk-mutual
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn smk_lms.wsgi --workers 2 --timeout 120 --log-file -"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.2
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        value: "" # Will default to SQLite unless PostgreSQL is connected
