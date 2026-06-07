@@ -1,0 +1,89 @@
+{% extends 'lms/base.html' %}
+{% block title %}Ruang Penilaian - LMS SMK Mutual{% endblock %}
+{% block guru_nilai_active %}active{% endblock %}
+{% block page_title %}Ruang Penilaian{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">📝 Ruang Penilaian Tugas</h2>
+    <p class="page-subtitle">Berikan nilai dan umpan balik untuk setiap submission siswa.</p>
+</div>
+<div class="table-card">
+    <table class="data-table">
+        <thead>
+            <tr><th>Siswa</th><th>Tugas</th><th>Mapel / Kelas</th><th>Dikumpulkan</th><th>Lampiran</th><th>Nilai</th><th>Aksi</th></tr>
+        </thead>
+        <tbody>
+        {% for sub in submissions %}
+        <tr class="{% if sub.nilai %}row-graded{% else %}row-pending{% endif %}">
+            <td><strong>{{ sub.siswa.user.get_full_name }}</strong><br><small>{{ sub.siswa.kelas.nama }}</small></td>
+            <td>{{ sub.tugas.judul }}</td>
+            <td>{{ sub.tugas.pertemuan.jadwal.mata_pelajaran.nama }}<br><small>{{ sub.tugas.pertemuan.jadwal.kelas.nama }}</small></td>
+            <td>{{ sub.submitted_at|date:"d M Y H:i" }}</td>
+            <td>
+                {% if sub.file %}<a href="{{ sub.file.url }}" target="_blank" class="btn btn-sm btn-outline">📎 File</a>{% endif %}
+                {% if sub.link %}<a href="{{ sub.link }}" target="_blank" class="btn btn-sm btn-outline">🔗 Link</a>{% endif %}
+                {% if sub.jawaban_teks %}<span class="badge badge-info">📄 Teks</span>{% endif %}
+            </td>
+            <td>
+                {% if sub.nilai %}
+                <span class="badge {% if sub.nilai >= 75 %}badge-success{% elif sub.nilai >= 60 %}badge-warning{% else %}badge-danger{% endif %}">
+                    {{ sub.nilai }}
+                </span>
+                {% else %}
+                <span class="badge badge-pending">Belum Dinilai</span>
+                {% endif %}
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="openGradeModal({{ sub.id }}, '{{ sub.siswa.user.get_full_name }}', '{{ sub.tugas.judul }}', '{{ sub.nilai|default:'' }}', '{{ sub.feedback|default:''|escapejs }}')">
+                    {% if sub.nilai %}Edit Nilai{% else %}Beri Nilai{% endif %}
+                </button>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="empty-row">Belum ada tugas yang dikumpulkan siswa.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Grade Modal -->
+<div class="modal" id="modal-grade">
+    <div class="modal-box modal-sm">
+        <div class="modal-header">
+            <h3>Beri Nilai</h3>
+            <button onclick="closeModal('modal-grade')">✕</button>
+        </div>
+        <div class="grade-info">
+            <p id="grade-student-name"></p>
+            <p id="grade-task-name" class="text-muted"></p>
+        </div>
+        <form method="POST" id="gradeForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Nilai (0-100)</label>
+                <input type="number" name="nilai" id="gradeInput" min="0" max="100" step="0.5" required placeholder="Masukkan nilai">
+            </div>
+            <div class="form-group">
+                <label>Umpan Balik / Komentar</label>
+                <textarea name="feedback" id="feedbackInput" rows="3" placeholder="Catatan untuk siswa..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="closeModal('modal-grade')">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan Nilai</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function openGradeModal(subId, studentName, taskName, currentNilai, currentFeedback) {
+    document.getElementById('grade-student-name').textContent = '👤 ' + studentName;
+    document.getElementById('grade-task-name').textContent = '📝 ' + taskName;
+    document.getElementById('gradeInput').value = currentNilai;
+    document.getElementById('feedbackInput').value = currentFeedback;
+    document.getElementById('gradeForm').action = '/guru/penilaian/nilai/' + subId + '/';
+    openModal('modal-grade');
+}
+</script>
+{% endblock %}

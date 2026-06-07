@@ -1,0 +1,135 @@
+{% extends 'lms/base.html' %}
+{% block title %}Kuis CBT - {{ kuis.judul }}{% endblock %}
+{% block page_title %}CBT - {{ kuis.judul }}{% endblock %}
+{% block content %}
+<div class="cbt-wrapper">
+    <!-- CBT Header -->
+    <div class="cbt-header">
+        <div class="cbt-title">
+            <h2>🧠 {{ kuis.judul }}</h2>
+            <p>{{ soal_list|length }} soal &bull; Harap jawab dengan jujur dan mandiri</p>
+        </div>
+        <div class="cbt-timer" id="cbt-timer">
+            <div class="timer-circle">
+                <span id="timer-display">{{ kuis.waktu_pengerjaan }}:00</span>
+            </div>
+            <span class="timer-label">Sisa Waktu</span>
+        </div>
+    </div>
+
+    <!-- Anti-cheat Warning -->
+    <div class="anticheat-warning" id="anticheat-box" style="display:none">
+        ⚠️ <strong>Peringatan!</strong> Kamu berpindah tab/jendela. Tindakan ini tercatat. Kembali dan lanjutkan kuis sekarang.
+    </div>
+
+    <!-- Quiz Form -->
+    <form method="POST" action="{% url 'selesai_kuis' kuis.id %}" id="quizForm" onsubmit="return confirmSubmit()">
+        {% csrf_token %}
+        <div class="soal-navigation">
+            {% for soal in soal_list %}
+            <button type="button" class="soal-nav-btn" id="nav-{{ forloop.counter }}" onclick="scrollToSoal({{ forloop.counter }})">{{ forloop.counter }}</button>
+            {% endfor %}
+        </div>
+
+        {% for soal in soal_list %}
+        <div class="soal-cbt-card" id="soal-card-{{ forloop.counter }}" data-soal="{{ forloop.counter }}">
+            <div class="soal-cbt-num">Soal {{ forloop.counter }} dari {{ soal_list|length }}</div>
+            <div class="soal-cbt-text">{{ soal.pertanyaan }}</div>
+
+            {% if soal.tipe == 'pilihan_ganda' %}
+            <div class="opsi-cbt">
+                {% if soal.opsi_a %}
+                <label class="opsi-label" for="s{{ soal.id }}_a">
+                    <input type="radio" name="soal_{{ soal.id }}" id="s{{ soal.id }}_a" value="A" onchange="markAnswered({{ forloop.counter }})">
+                    <span class="opsi-key">A</span> {{ soal.opsi_a }}
+                </label>
+                {% endif %}
+                {% if soal.opsi_b %}
+                <label class="opsi-label" for="s{{ soal.id }}_b">
+                    <input type="radio" name="soal_{{ soal.id }}" id="s{{ soal.id }}_b" value="B" onchange="markAnswered({{ forloop.counter }})">
+                    <span class="opsi-key">B</span> {{ soal.opsi_b }}
+                </label>
+                {% endif %}
+                {% if soal.opsi_c %}
+                <label class="opsi-label" for="s{{ soal.id }}_c">
+                    <input type="radio" name="soal_{{ soal.id }}" id="s{{ soal.id }}_c" value="C" onchange="markAnswered({{ forloop.counter }})">
+                    <span class="opsi-key">C</span> {{ soal.opsi_c }}
+                </label>
+                {% endif %}
+                {% if soal.opsi_d %}
+                <label class="opsi-label" for="s{{ soal.id }}_d">
+                    <input type="radio" name="soal_{{ soal.id }}" id="s{{ soal.id }}_d" value="D" onchange="markAnswered({{ forloop.counter }})">
+                    <span class="opsi-key">D</span> {{ soal.opsi_d }}
+                </label>
+                {% endif %}
+                {% if soal.opsi_e %}
+                <label class="opsi-label" for="s{{ soal.id }}_e">
+                    <input type="radio" name="soal_{{ soal.id }}" id="s{{ soal.id }}_e" value="E" onchange="markAnswered({{ forloop.counter }})">
+                    <span class="opsi-key">E</span> {{ soal.opsi_e }}
+                </label>
+                {% endif %}
+            </div>
+            {% else %}
+            <textarea name="soal_{{ soal.id }}" rows="4" placeholder="Tuliskan jawabanmu di sini..." class="esai-input" onkeyup="markAnswered({{ forloop.counter }})"></textarea>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="cbt-submit-area">
+            <p class="cbt-submit-info">Pastikan semua soal sudah terjawab sebelum menekan tombol selesai.</p>
+            <button type="submit" class="btn btn-primary btn-lg">✅ Selesai & Kumpulkan</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const DURASI_DETIK = {{ durasi_detik }};
+let sisaWaktu = DURASI_DETIK;
+let tabWarnings = 0;
+
+// Countdown Timer
+const timerDisplay = document.getElementById('timer-display');
+const timerInterval = setInterval(() => {
+    sisaWaktu--;
+    const menit = Math.floor(sisaWaktu / 60);
+    const detik = sisaWaktu % 60;
+    timerDisplay.textContent = `${String(menit).padStart(2,'0')}:${String(detik).padStart(2,'0')}`;
+    if (sisaWaktu <= 300) timerDisplay.parentElement.classList.add('timer-warning');
+    if (sisaWaktu <= 0) {
+        clearInterval(timerInterval);
+        alert('Waktu habis! Jawaban dikumpulkan secara otomatis.');
+        document.getElementById('quizForm').submit();
+    }
+}, 1000);
+
+// Anti-cheat: detect tab switching
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        tabWarnings++;
+        document.getElementById('anticheat-box').style.display = 'block';
+        setTimeout(() => {
+            document.getElementById('anticheat-box').style.display = 'none';
+        }, 5000);
+    }
+});
+
+// Mark soal as answered in navigator
+function markAnswered(num) {
+    document.getElementById('nav-'+num).classList.add('nav-answered');
+}
+
+function scrollToSoal(num) {
+    document.getElementById('soal-card-'+num).scrollIntoView({ behavior: 'smooth' });
+}
+
+function confirmSubmit() {
+    return confirm('Yakin ingin mengumpulkan jawaban? Kamu tidak bisa mengubah jawaban setelah ini.');
+}
+
+// Disable copy-paste
+document.addEventListener('copy', (e) => e.preventDefault());
+document.addEventListener('paste', (e) => e.preventDefault());
+</script>
+{% endblock %}

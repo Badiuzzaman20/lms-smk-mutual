@@ -1,0 +1,76 @@
+{% extends 'lms/base.html' %}
+{% block title %}Dashboard Siswa - LMS SMK Mutual{% endblock %}
+{% block siswa_dash_active %}active{% endblock %}
+{% block page_title %}Dashboard Siswa{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title">Halo, {{ siswa.user.first_name }}! 👋</h2>
+        <p class="page-subtitle">{{ siswa.kelas.nama }} &bull; {{ siswa.kelas.jurusan.nama }} &bull; NISN: {{ siswa.nisn }}</p>
+    </div>
+</div>
+
+<!-- To-Do List -->
+{% if tugas_upcoming %}
+<div class="todo-banner">
+    <span class="todo-icon">⏰</span>
+    <div>
+        <strong>{{ tugas_upcoming|length }} Tugas / Kuis Mendekati Deadline!</strong>
+        <p>Segera selesaikan sebelum batas waktu berakhir.</p>
+    </div>
+</div>
+<div class="todo-list">
+    {% for tugas in tugas_upcoming %}
+    <div class="todo-item todo-{{ tugas.tipe }}">
+        <span class="todo-type-icon">{% if tugas.tipe == 'kuis' %}🧠{% else %}📝{% endif %}</span>
+        <div class="todo-info">
+            <strong>{{ tugas.judul }}</strong>
+            <p>{{ tugas.pertemuan.jadwal.mata_pelajaran.nama }} &bull; {{ tugas.pertemuan.jadwal.kelas.nama }}</p>
+        </div>
+        <div class="todo-deadline">
+            <span class="deadline-label">Deadline</span>
+            <span class="deadline-val">{{ tugas.deadline|date:"d M Y H:i" }}</span>
+        </div>
+        <a href="{% url 'siswa_kelas_detail' tugas.pertemuan.jadwal.id %}" class="btn btn-sm btn-primary">Kerjakan →</a>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Mapel Progress -->
+<div class="section-header" style="margin-top: 2rem;">
+    <h3>📚 Mata Pelajaran & Progress Belajar</h3>
+</div>
+<div class="mapel-grid">
+    {% for item in mapel_progress %}
+    <a href="{% url 'siswa_kelas_detail' item.jadwal.id %}" class="mapel-card">
+        <div class="mapel-card-top">
+            <div class="mapel-icon">📖</div>
+            <span class="mapel-kategori badge badge-kategori-{{ item.jadwal.mata_pelajaran.kategori }}">
+                {{ item.jadwal.mata_pelajaran.get_kategori_display }}
+            </span>
+        </div>
+        <h4 class="mapel-name">{{ item.jadwal.mata_pelajaran.nama }}</h4>
+        <p class="mapel-guru">👩‍🏫 {{ item.jadwal.guru.user.get_full_name }}</p>
+        <p class="mapel-jadwal">📅 {{ item.jadwal.hari }}, {{ item.jadwal.jam_mulai|time:"H:i" }}-{{ item.jadwal.jam_selesai|time:"H:i" }}</p>
+        <div class="progress-section">
+            <div class="progress-label">
+                <span>Progress</span>
+                <span>{{ item.progress }}%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill {% if item.progress >= 75 %}prog-green{% elif item.progress >= 40 %}prog-yellow{% else %}prog-red{% endif %}"
+                     style="width: {{ item.progress }}%"></div>
+            </div>
+            <small class="progress-sub">{{ item.total_pertemuan }} pertemuan tersedia</small>
+        </div>
+        <div class="mapel-footer">Buka Kelas →</div>
+    </a>
+    {% empty %}
+    <div class="empty-state">
+        <div class="empty-icon">📚</div>
+        <p>Belum ada kelas yang tersedia untukmu.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

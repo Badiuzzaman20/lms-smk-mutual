@@ -1,0 +1,116 @@
+{% extends 'lms/base.html' %}
+{% block title %}Dashboard Guru - LMS SMK Mutual{% endblock %}
+{% block guru_dash_active %}active{% endblock %}
+{% block page_title %}Dashboard Guru{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title">Selamat Datang, {{ guru.user.first_name }} 👋</h2>
+        <p class="page-subtitle">{{ guru.jabatan }} &bull; NIP: {{ guru.nip }}</p>
+    </div>
+    {% if pending_count > 0 %}
+    <div class="pending-badge">
+        <span class="pending-icon">🔔</span>
+        <span><strong>{{ pending_count }}</strong> tugas belum dinilai</span>
+        <a href="{% url 'guru_penilaian' %}" class="btn btn-sm btn-primary">Nilai Sekarang</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card stat-blue">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info">
+            <div class="stat-number">{{ jadwal_hari_ini|length }}</div>
+            <div class="stat-label">Kelas Hari Ini</div>
+        </div>
+    </div>
+    <div class="stat-card stat-purple">
+        <div class="stat-icon">📋</div>
+        <div class="stat-info">
+            <div class="stat-number">{{ semua_jadwal|length }}</div>
+            <div class="stat-label">Total Kelas Diampu</div>
+        </div>
+    </div>
+    <div class="stat-card stat-orange">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+            <div class="stat-number">{{ pending_count }}</div>
+            <div class="stat-label">Tugas Belum Dinilai</div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Classes -->
+<div class="section-header">
+    <h3>📅 Jadwal Mengajar Hari Ini — {{ hari_ini }}</h3>
+</div>
+{% if jadwal_hari_ini %}
+<div class="kelas-cards">
+    {% for j in jadwal_hari_ini %}
+    <a href="{% url 'guru_kelas_detail' j.id %}" class="kelas-card">
+        <div class="kelas-card-header">
+            <span class="kelas-jam">{{ j.jam_mulai|time:"H:i" }} - {{ j.jam_selesai|time:"H:i" }}</span>
+            <span class="kelas-badge">{{ j.kelas.nama }}</span>
+        </div>
+        <div class="kelas-mapel">{{ j.mata_pelajaran.nama }}</div>
+        <div class="kelas-meta"><span>{{ j.mata_pelajaran.get_kategori_display }}</span></div>
+        <div class="kelas-footer">Buka Kelas →</div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🎉</div>
+    <p>Tidak ada jadwal mengajar hari ini.</p>
+</div>
+{% endif %}
+
+<!-- All Classes -->
+<div class="section-header" style="margin-top: 2rem;">
+    <h3>📚 Semua Kelas yang Diampu</h3>
+</div>
+<div class="table-card">
+    <table class="data-table">
+        <thead><tr><th>Hari</th><th>Jam</th><th>Mata Pelajaran</th><th>Kelas</th><th>Aksi</th></tr></thead>
+        <tbody>
+        {% for j in semua_jadwal %}
+        <tr>
+            <td><span class="badge badge-hari">{{ j.hari }}</span></td>
+            <td>{{ j.jam_mulai|time:"H:i" }} - {{ j.jam_selesai|time:"H:i" }}</td>
+            <td><strong>{{ j.mata_pelajaran.nama }}</strong></td>
+            <td><span class="badge badge-kelas">{{ j.kelas.nama }}</span></td>
+            <td><a href="{% url 'guru_kelas_detail' j.id %}" class="btn btn-sm btn-primary">Buka Kelas</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty-row">Belum ada kelas yang ditugaskan.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pending Submissions -->
+{% if pending_submissions %}
+<div class="section-header" style="margin-top: 2rem;">
+    <h3>🔔 Tugas Menunggu Penilaian</h3>
+    <a href="{% url 'guru_penilaian' %}" class="btn btn-sm btn-outline">Lihat Semua</a>
+</div>
+<div class="table-card">
+    <table class="data-table">
+        <thead><tr><th>Siswa</th><th>Tugas</th><th>Mata Pelajaran</th><th>Dikumpulkan</th><th>Aksi</th></tr></thead>
+        <tbody>
+        {% for sub in pending_submissions %}
+        <tr>
+            <td><strong>{{ sub.siswa.user.get_full_name }}</strong></td>
+            <td>{{ sub.tugas.judul }}</td>
+            <td>{{ sub.tugas.pertemuan.jadwal.mata_pelajaran.nama }}</td>
+            <td>{{ sub.submitted_at|date:"d M Y H:i" }}</td>
+            <td><a href="{% url 'guru_penilaian' %}" class="btn btn-sm btn-primary">Nilai</a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'lms/base.html' %}
+{% block title %}Monitoring PKL - Guru LMS{% endblock %}
+{% block guru_pkl_active %}active{% endblock %}
+{% block page_title %}Monitoring PKL{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">🏭 Monitoring Praktik Kerja Lapangan</h2>
+    <p class="page-subtitle">Pantau dan verifikasi jurnal PKL siswa bimbinganmu</p>
+</div>
+
+{% for pkl in pkl_list %}
+<div class="pkl-card">
+    <div class="pkl-card-header">
+        <div>
+            <h3>{{ pkl.siswa.user.get_full_name }}</h3>
+            <p class="text-muted">{{ pkl.siswa.kelas.nama }} &bull; NISN: {{ pkl.siswa.nisn }}</p>
+        </div>
+        <div class="pkl-industri">
+            <span class="pkl-icon">🏭</span>
+            <div>
+                <strong>{{ pkl.nama_industri }}</strong>
+                <p class="text-muted">{{ pkl.alamat_industri }}</p>
+                <small>{{ pkl.tanggal_mulai|date:"d M Y" }} — {{ pkl.tanggal_selesai|date:"d M Y" }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="table-card" style="margin:0; border-radius: 0 0 12px 12px;">
+        <table class="data-table">
+            <thead><tr><th>Minggu</th><th>Tanggal</th><th>Kegiatan</th><th>Absensi</th><th>Nilai Industri</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody>
+            {% for j in pkl.jurnal_list.all %}
+            <tr>
+                <td><strong>Minggu {{ j.minggu_ke }}</strong></td>
+                <td>{{ j.tanggal_awal|date:"d M" }} - {{ j.tanggal_akhir|date:"d M Y" }}</td>
+                <td>{{ j.kegiatan|truncatechars:80 }}</td>
+                <td><span class="badge badge-{{ j.status_absensi }}">{{ j.get_status_absensi_display }}</span></td>
+                <td>{% if j.nilai_industri %}{{ j.nilai_industri }}{% else %}-{% endif %}</td>
+                <td>
+                    {% if j.is_verified %}
+                    <span class="badge badge-success">✅ Terverifikasi</span>
+                    {% else %}
+                    <span class="badge badge-warning">⏳ Menunggu</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not j.is_verified %}
+                    <button class="btn btn-sm btn-primary" onclick="openVerifModal({{ j.id }}, {{ j.minggu_ke }}, '{{ j.catatan_pembimbing|default:''|escapejs }}')">Verifikasi</button>
+                    {% endif %}
+                    {% if j.file_laporan %}
+                    <a href="{{ j.file_laporan.url }}" target="_blank" class="btn btn-sm btn-outline">📎</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="empty-row">Siswa belum mengisi jurnal PKL.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% empty %}
+<div class="empty-state">
+    <div class="empty-icon">🏭</div>
+    <p>Tidak ada siswa PKL yang dibimbing saat ini.</p>
+</div>
+{% endfor %}
+
+<!-- Verifikasi Modal -->
+<div class="modal" id="modal-verif">
+    <div class="modal-box modal-sm">
+        <div class="modal-header"><h3>Verifikasi Jurnal Minggu <span id="verif-week"></span></h3><button onclick="closeModal('modal-verif')">✕</button></div>
+        <form method="POST" id="verifForm">
+            {% csrf_token %}
+            <div class="form-group"><label>Nilai dari Industri</label><input type="number" name="nilai_industri" min="0" max="100" step="0.5" placeholder="Kosongkan jika belum ada"></div>
+            <div class="form-group"><label>Catatan Pembimbing</label><textarea name="catatan" rows="3" id="verifCatatan" placeholder="Berikan umpan balik untuk siswa..."></textarea></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modal-verif')">Batal</button><button type="submit" class="btn btn-primary">✅ Verifikasi & Simpan</button></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function openVerifModal(jurnalId, mingguKe, catatan) {
+    document.getElementById('verif-week').textContent = mingguKe;
+    document.getElementById('verifCatatan').value = catatan;
+    document.getElementById('verifForm').action = '/guru/pkl/jurnal/' + jurnalId + '/verifikasi/';
+    openModal('modal-verif');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends 'lms/base.html' %}
+{% block title %}{{ jadwal.mata_pelajaran.nama }} - LMS{% endblock %}
+{% block siswa_dash_active %}active{% endblock %}
+{% block page_title %}{{ jadwal.mata_pelajaran.nama }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{% url 'siswa_dashboard' %}" class="breadcrumb-link">← Dashboard</a>
+        <h2 class="page-title">{{ jadwal.mata_pelajaran.nama }}</h2>
+        <p class="page-subtitle">{{ jadwal.kelas.nama }} &bull; Guru: {{ jadwal.guru.user.get_full_name }} &bull; {{ jadwal.hari }}</p>
+    </div>
+</div>
+
+{% for item in pertemuan_list %}
+{% with p=item.pertemuan %}
+<div class="pertemuan-card">
+    <div class="pertemuan-header" onclick="toggleSection('s-pertemuan-{{ p.id }}')">
+        <div class="pertemuan-title">
+            <span class="pertemuan-num">{{ p.urutan }}</span>
+            <div><strong>{{ p.judul }}</strong>{% if p.deskripsi %}<p class="pertemuan-desc">{{ p.deskripsi }}</p>{% endif %}</div>
+        </div>
+        <span class="chevron">▼</span>
+    </div>
+
+    <div id="s-pertemuan-{{ p.id }}" class="pertemuan-body">
+
+        <!-- Materi -->
+        {% if p.materi_list.all %}
+        <div class="content-section">
+            <h4>📚 Materi Pembelajaran</h4>
+            <div class="materi-grid">
+                {% for m in p.materi_list.all %}
+                <div class="materi-item materi-{{ m.tipe }}">
+                    <span class="materi-icon">{% if m.tipe == 'modul' %}📄{% elif m.tipe == 'audiovisual' %}🎬{% else %}🔗{% endif %}</span>
+                    <div>
+                        <strong>{{ m.judul }}</strong>
+                        {% if m.deskripsi %}<p>{{ m.deskripsi }}</p>{% endif %}
+                        {% if m.video_embed %}
+                        <div class="video-embed-wrapper">
+                            <iframe src="{{ m.video_embed }}" allowfullscreen></iframe>
+                        </div>
+                        {% endif %}
+                        {% if m.link_eksternal %}<a href="{{ m.link_eksternal }}" target="_blank" class="btn btn-sm btn-outline">Buka Link →</a>{% endif %}
+                        {% if m.file %}<a href="{{ m.file.url }}" target="_blank" class="btn btn-sm btn-outline">📎 Unduh File</a>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Live Class -->
+        {% for lc in p.live_class.all %}
+        <div class="content-section">
+            <h4>📹 Live Virtual Class</h4>
+            <a href="{{ lc.link }}" target="_blank" class="btn btn-primary btn-live">
+                🔴 Bergabung {{ lc.get_platform_display }} — {{ lc.waktu_mulai|date:"d M Y H:i" }}
+            </a>
+        </div>
+        {% endfor %}
+
+        <!-- Presensi -->
+        {% if item.presensi_aktif %}
+        <div class="content-section">
+            <div class="presensi-box presensi-open">
+                <div class="presensi-info">
+                    <h4>✅ Presensi Terbuka!</h4>
+                    <p>Batas waktu: <strong>{{ item.presensi_aktif.batas_waktu|date:"H:i, d M Y" }}</strong></p>
+                </div>
+                {% if item.sudah_absen %}
+                <div class="badge badge-success badge-lg">Sudah Absen: {{ item.sudah_absen.get_status_display }}</div>
+                {% else %}
+                <form method="POST" action="{% url 'absen' item.presensi_aktif.id %}" class="presensi-form">
+                    {% csrf_token %}
+                    <select name="status">
+                        <option value="hadir">✅ Hadir</option>
+                        <option value="izin">📋 Izin</option>
+                        <option value="sakit">🤒 Sakit</option>
+                    </select>
+                    <input type="text" name="keterangan" placeholder="Keterangan (opsional)">
+                    <button type="submit" class="btn btn-primary">Absen Sekarang</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% elif item.sudah_absen %}
+        <div class="content-section">
+            <div class="presensi-box presensi-done">
+                <span>✅ Kamu sudah absen: <strong>{{ item.sudah_absen.get_status_display }}</strong></span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Forum -->
+        {% for forum in p.forum_list.all %}
+        <div class="content-section">
+            <h4>💬 Forum: {{ forum.judul }}</h4>
+            <p class="forum-desc">{{ forum.deskripsi }}</p>
+            <div class="komentar-list">
+                {% for k in forum.komentar_list.all %}
+                <div class="komentar-item {% if k.user == request.user %}komentar-mine{% endif %}">
+                    <div class="komentar-avatar">{{ k.user.first_name|first|upper }}</div>
+                    <div class="komentar-body">
+                        <strong>{{ k.user.get_full_name }}</strong>
+                        <span class="komentar-time">{{ k.created_at|date:"d M H:i" }}</span>
+                        <p>{{ k.konten }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <form method="POST" action="{% url 'tambah_komentar' forum.id %}" class="komentar-form">
+                {% csrf_token %}
+                <input type="text" name="konten" placeholder="Tulis komentar..." required>
+                <button type="submit" class="btn btn-primary btn-sm">Kirim</button>
+            </form>
+        </div>
+        {% endfor %}
+
+        <!-- Tugas -->
+        {% for tu in p.tugas_ujian_list.all %}
+        {% if tu.tipe == 'tugas' %}
+        <div class="content-section">
+            <h4>📝 {{ tu.judul }}</h4>
+            <p>{{ tu.deskripsi }}</p>
+            <div class="info-chip chip-orange">Deadline: {{ tu.deadline|date:"d M Y H:i" }}</div>
+            {% with sub=item.submissions_saya %}
+            {% if tu.id|stringformat:'s' in item.sudah_submit_ids %}
+            <div class="submission-status">
+                <span class="badge badge-success">✅ Sudah Dikumpulkan</span>
+            </div>
+            {% else %}
+            <form method="POST" action="{% url 'submit_tugas' tu.id %}" enctype="multipart/form-data" class="submit-tugas-form">
+                {% csrf_token %}
+                <div class="form-group"><label>Upload File (opsional)</label><input type="file" name="file"></div>
+                <div class="form-group"><label>Link (GitHub / Drive)</label><input type="url" name="link" placeholder="https://..."></div>
+                <div class="form-group"><label>Jawaban Teks (opsional)</label><textarea name="jawaban_teks" rows="2" placeholder="Tuliskan jawabanmu..."></textarea></div>
+                <button type="submit" class="btn btn-primary">📤 Kumpulkan Tugas</button>
+            </form>
+            {% endif %}
+            {% endwith %}
+        </div>
+        {% endif %}
+
+        <!-- Kuis / CBT -->
+        {% if tu.tipe == 'kuis' %}
+        <div class="content-section">
+            <div class="kuis-box">
+                <div>
+                    <h4>🧠 {{ tu.judul }}</h4>
+                    <p>{{ tu.deskripsi }}</p>
+                    <div class="kuis-meta">
+                        <span class="info-chip chip-orange">Deadline: {{ tu.deadline|date:"d M Y H:i" }}</span>
+                        <span class="info-chip chip-blue">⏱ {{ tu.waktu_pengerjaan }} menit</span>
+                        <span class="info-chip chip-purple">{{ tu.soal_list.count }} soal</span>
+                    </div>
+                </div>
+                <a href="{% url 'mulai_kuis' tu.id %}" class="btn btn-primary">Mulai Kuis →</a>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+
+    </div>
+</div>
+{% endwith %}
+{% empty %}
+<div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <p>Belum ada pertemuan yang ditambahkan oleh guru.</p>
+</div>
+{% endfor %}
+{% endblock %}

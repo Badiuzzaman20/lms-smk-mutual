@@ -1,0 +1,87 @@
+{% extends 'lms/base.html' %}
+{% block title %}Jurnal PKL - LMS SMK Mutual{% endblock %}
+{% block siswa_pkl_active %}active{% endblock %}
+{% block page_title %}Jurnal PKL{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title">🏭 Jurnal Praktik Kerja Lapangan</h2>
+        {% if pkl %}<p class="page-subtitle">{{ pkl.nama_industri }} &bull; {{ pkl.tanggal_mulai|date:"d M Y" }} - {{ pkl.tanggal_selesai|date:"d M Y" }}<br>Pembimbing: {{ pkl.guru_pembimbing.user.get_full_name|default:'Belum ditentukan' }}</p>{% endif %}
+    </div>
+    {% if pkl %}<button class="btn btn-primary" onclick="openModal('modal-jurnal')">➕ Tambah Jurnal Minggu Ini</button>{% endif %}
+</div>
+
+{% if not pkl %}
+<div class="empty-state">
+    <div class="empty-icon">🏭</div>
+    <h3>Kamu belum terdaftar dalam program PKL.</h3>
+    <p>Hubungi guru pembimbing atau admin untuk mendaftarkan data PKL kamu.</p>
+</div>
+{% else %}
+<!-- Progress PKL -->
+<div class="pkl-progress-card">
+    <div class="pkl-info-grid">
+        <div class="pkl-info-item"><span class="pkl-info-label">Industri</span><strong>{{ pkl.nama_industri }}</strong></div>
+        <div class="pkl-info-item"><span class="pkl-info-label">Alamat</span><strong>{{ pkl.alamat_industri }}</strong></div>
+        <div class="pkl-info-item"><span class="pkl-info-label">Periode</span><strong>{{ pkl.tanggal_mulai|date:"d M Y" }} – {{ pkl.tanggal_selesai|date:"d M Y" }}</strong></div>
+        <div class="pkl-info-item"><span class="pkl-info-label">Jurnal Terisi</span><strong>{{ jurnal_list|length }} Minggu</strong></div>
+    </div>
+</div>
+
+<!-- Jurnal Table -->
+<div class="table-card">
+    <table class="data-table">
+        <thead><tr><th>Minggu</th><th>Tanggal</th><th>Kegiatan</th><th>Absensi</th><th>Nilai</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody>
+        {% for j in jurnal_list %}
+        <tr>
+            <td><strong>Minggu {{ j.minggu_ke }}</strong></td>
+            <td>{{ j.tanggal_awal|date:"d M" }} - {{ j.tanggal_akhir|date:"d M Y" }}</td>
+            <td>{{ j.kegiatan|truncatechars:100 }}</td>
+            <td><span class="badge badge-{{ j.status_absensi }}">{{ j.get_status_absensi_display }}</span></td>
+            <td>{% if j.nilai_industri %}<span class="badge badge-success">{{ j.nilai_industri }}</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+            <td>
+                {% if j.is_verified %}<span class="badge badge-success">✅ Terverifikasi</span>
+                {% else %}<span class="badge badge-warning">⏳ Menunggu</span>{% endif %}
+            </td>
+            <td>
+                {% if j.catatan_pembimbing %}
+                <button class="btn btn-sm btn-outline" onclick="alert('{{ j.catatan_pembimbing|escapejs }}')">💬 Catatan</button>
+                {% endif %}
+                {% if j.file_laporan %}<a href="{{ j.file_laporan.url }}" target="_blank" class="btn btn-sm btn-outline">📎</a>{% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="empty-row">Belum ada jurnal. Mulai isi jurnal pertamamu!</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal Tambah Jurnal -->
+<div class="modal" id="modal-jurnal">
+    <div class="modal-box">
+        <div class="modal-header"><h3>📓 Tambah Jurnal Mingguan</h3><button onclick="closeModal('modal-jurnal')">✕</button></div>
+        <form method="POST" action="{% url 'tambah_jurnal' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-grid">
+                <div class="form-group"><label>Minggu Ke-</label><input type="number" name="minggu_ke" min="1" max="52" required placeholder="e.g. 1"></div>
+                <div class="form-group"><label>Status Kehadiran</label>
+                    <select name="status_absensi">
+                        <option value="hadir">✅ Hadir</option>
+                        <option value="izin">📋 Izin</option>
+                        <option value="sakit">🤒 Sakit</option>
+                        <option value="alpa">❌ Alpa</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Tanggal Awal Minggu</label><input type="date" name="tanggal_awal" required></div>
+                <div class="form-group"><label>Tanggal Akhir Minggu</label><input type="date" name="tanggal_akhir" required></div>
+            </div>
+            <div class="form-group"><label>Deskripsi Kegiatan</label><textarea name="kegiatan" rows="5" required placeholder="Ceritakan kegiatan yang kamu lakukan selama minggu ini..."></textarea></div>
+            <div class="form-group"><label>Upload Laporan / Foto Kegiatan (opsional)</label><input type="file" name="file_laporan" accept=".pdf,.jpg,.jpeg,.png"></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modal-jurnal')">Batal</button><button type="submit" class="btn btn-primary">📤 Simpan Jurnal</button></div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

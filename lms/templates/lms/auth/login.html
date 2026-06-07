@@ -1,0 +1,57 @@
+{% extends 'lms/base.html' %}
+{% load static %}
+{% block title %}Login - LMS SMK Mutual{% endblock %}
+{% block auth_content %}
+<div class="auth-wrapper">
+    <div class="auth-left">
+        <div class="auth-brand">
+            <div class="auth-logo">🎓</div>
+            <h1>SMK Mutual</h1>
+            <p>Kota Magelang</p>
+        </div>
+        <div class="auth-illustration">
+            <div class="floating-card card-1"><span>📚</span> Materi Pembelajaran</div>
+            <div class="floating-card card-2"><span>✅</span> Presensi Digital</div>
+            <div class="floating-card card-3"><span>💼</span> Portofolio PKL</div>
+            <div class="floating-card card-4"><span>📊</span> Monitoring Nilai</div>
+        </div>
+        <div class="auth-tagline">
+            <h2>Platform Belajar Digital <span class="gradient-text">SMK Masa Kini</span></h2>
+            <p>Akses materi, kerjakan tugas, pantau progress belajar — kapan saja dan di mana saja.</p>
+        </div>
+    </div>
+    <div class="auth-right">
+        <div class="auth-card">
+            <div class="auth-card-header">
+                <h2>Selamat Datang</h2>
+                <p>Masuk ke akun LMS kamu</p>
+            </div>
+            <form method="POST" action="{% url 'login' %}" class="auth-form" id="loginForm">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="username">Username / Email</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="username" name="username" placeholder="Masukkan username atau email" required autocomplete="username">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="password" name="password" placeholder="Masukkan password" required autocomplete="current-password">
+                        <button type="button" class="password-toggle" onclick="togglePassword('password')">👁</button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
+                    <span>Masuk</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+            </form>
+            <div class="auth-footer">
+                <p>Belum punya akun? <a href="{% url 'signup' %}">Daftar di sini</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock auth_content %}

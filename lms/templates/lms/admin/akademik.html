@@ -1,0 +1,319 @@
+{% extends 'lms/base.html' %}
+{% block title %}Data Akademik - Admin LMS{% endblock %}
+{% block admin_akademik_active %}active{% endblock %}
+{% block page_title %}Manajemen Akademik{% endblock %}
+{% block content %}
+<div class="tabs-container">
+    <div class="smk-brand-bar"></div>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('jurusan-tab', this)">🏭 Jurusan ({{ jurusan_list|length }})</button>
+        <button class="tab-btn" onclick="switchTab('kelas-tab', this)">🏫 Kelas ({{ kelas_list|length }})</button>
+        <button class="tab-btn" onclick="switchTab('mapel-tab', this)">📚 Mata Pelajaran ({{ mapel_list|length }})</button>
+    </div>
+
+    <!-- ============ JURUSAN TAB ============ -->
+    <div id="jurusan-tab" class="tab-content active">
+        <div class="split-layout">
+            <div class="form-card" style="min-width:280px;max-width:320px;">
+                <h3>🏭 Tambah Jurusan</h3>
+                <p style="color:var(--text-muted);font-size:0.82rem;margin-top:-4px;">Program Keahlian SMK Mutual</p>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="tambah_jurusan">
+                    <div class="form-group"><label>Nama Jurusan *</label><input type="text" name="nama_jurusan" required placeholder="e.g. Teknik Otomotif"></div>
+                    <div class="form-group"><label>Kode Jurusan *</label><input type="text" name="kode_jurusan" required placeholder="e.g. TO" style="text-transform:uppercase;"></div>
+                    <button type="submit" class="btn btn-primary btn-full">➕ Tambah Jurusan</button>
+                </form>
+            </div>
+            <div style="flex:2;">
+                <div class="table-card">
+                    <table class="data-table" id="jurusan-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Kode</th>
+                                <th>Nama Jurusan / Program Keahlian</th>
+                                <th>Jumlah Kelas</th>
+                                <th class="action-col">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for j in jurusan_list %}
+                        <tr>
+                            <td style="color:var(--text-muted);">{{ forloop.counter }}</td>
+                            <td><span class="badge badge-smk-green" style="font-size:0.8rem;padding:4px 12px;">{{ j.kode }}</span></td>
+                            <td><strong>{{ j.nama }}</strong></td>
+                            <td><span class="badge badge-info">{{ j.kelas_list.count }} kelas</span></td>
+                            <td class="action-col">
+                                <button class="btn btn-sm btn-secondary" onclick="openEditJurusan({{ j.id }}, '{{ j.nama }}', '{{ j.kode }}')">✏️ Edit</button>
+                                <a href="{% url 'hapus_jurusan' j.id %}" class="btn btn-sm btn-danger" onclick="return confirm('⚠️ Hapus jurusan {{ j.nama }}? Semua kelas terkait akan terpengaruh.')">🗑️ Hapus</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="empty-row">Belum ada jurusan. Tambahkan jurusan baru di sebelah kiri.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ KELAS TAB ============ -->
+    <div id="kelas-tab" class="tab-content">
+        <div class="split-layout">
+            <div class="form-card" style="min-width:280px;max-width:320px;">
+                <h3>🏫 Tambah Kelas</h3>
+                <p style="color:var(--text-muted);font-size:0.82rem;margin-top:-4px;">Tambah rombongan belajar baru</p>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="tambah_kelas">
+                    <div class="form-group"><label>Tingkat *</label>
+                        <select name="tingkat" required>
+                            <option value="X">Kelas X</option>
+                            <option value="XI">Kelas XI</option>
+                            <option value="XII">Kelas XII</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Nama Kelas *</label><input type="text" name="nama_kelas" required placeholder="e.g. XI TO 1"></div>
+                    <div class="form-group"><label>Jurusan *</label>
+                        <select name="jurusan_id" required>
+                            <option value="">-- Pilih Jurusan --</option>
+                            {% for j in jurusan_list %}<option value="{{ j.id }}">{{ j.kode }} - {{ j.nama }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">➕ Tambah Kelas</button>
+                </form>
+            </div>
+            <div style="flex:2;">
+                <div class="table-search-bar">
+                    <input type="text" class="search-input" placeholder="🔍 Cari kelas..." onkeyup="filterTable(this, 'kelas-table')">
+                </div>
+                <div class="table-card">
+                    <table class="data-table" id="kelas-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Tingkat</th>
+                                <th>Nama Kelas</th>
+                                <th>Jurusan</th>
+                                <th>Jml Siswa</th>
+                                <th class="action-col">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for k in kelas_list %}
+                        <tr>
+                            <td style="color:var(--text-muted);">{{ forloop.counter }}</td>
+                            <td><span class="badge badge-smk-yellow">{{ k.tingkat }}</span></td>
+                            <td><strong>{{ k.nama }}</strong></td>
+                            <td><span class="badge badge-smk-green">{{ k.jurusan.kode }}</span></td>
+                            <td><span class="badge badge-info">{{ k.siswa_list.count }} siswa</span></td>
+                            <td class="action-col">
+                                <button class="btn btn-sm btn-secondary" onclick="openEditKelas({{ k.id }}, '{{ k.tingkat }}', '{{ k.nama }}', {{ k.jurusan.id }})">✏️ Edit</button>
+                                <a href="{% url 'hapus_kelas' k.id %}" class="btn btn-sm btn-danger" onclick="return confirm('⚠️ Hapus kelas {{ k.nama }}? Data siswa tidak akan terhapus.')">🗑️ Hapus</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="empty-row">Belum ada kelas.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MAPEL TAB ============ -->
+    <div id="mapel-tab" class="tab-content">
+        <div class="split-layout">
+            <div class="form-card" style="min-width:280px;max-width:340px;">
+                <h3>📚 Tambah Mata Pelajaran</h3>
+                <p style="color:var(--text-muted);font-size:0.82rem;margin-top:-4px;">Mata pelajaran umum atau kejuruan</p>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="tambah_mapel">
+                    <div class="form-group"><label>Nama Mapel *</label><input type="text" name="nama_mapel" required placeholder="e.g. Matematika"></div>
+                    <div class="form-group"><label>Kode Mapel *</label><input type="text" name="kode_mapel" required placeholder="e.g. MTK" style="text-transform:uppercase;"></div>
+                    <div class="form-group"><label>Kategori *</label>
+                        <select name="kategori" required>
+                            <option value="nasional">Muatan Nasional</option>
+                            <option value="kewilayahan">Muatan Kewilayahan</option>
+                            <option value="kejuruan">Muatan Kejuruan</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Jurusan (kosong = semua jurusan)</label>
+                        <select name="jurusan_id_mapel">
+                            <option value="">-- Semua Jurusan --</option>
+                            {% for j in jurusan_list %}<option value="{{ j.id }}">{{ j.kode }} - {{ j.nama }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">➕ Tambah Mapel</button>
+                </form>
+            </div>
+            <div style="flex:2;">
+                <div class="table-search-bar">
+                    <input type="text" class="search-input" placeholder="🔍 Cari mata pelajaran..." onkeyup="filterTable(this, 'mapel-table')">
+                </div>
+                <div class="table-card">
+                    <table class="data-table" id="mapel-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Kode</th>
+                                <th>Nama Mata Pelajaran</th>
+                                <th>Kategori</th>
+                                <th>Jurusan</th>
+                                <th class="action-col">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for m in mapel_list %}
+                        <tr>
+                            <td style="color:var(--text-muted);">{{ forloop.counter }}</td>
+                            <td><code>{{ m.kode }}</code></td>
+                            <td><strong>{{ m.nama }}</strong></td>
+                            <td><span class="badge badge-kategori-{{ m.kategori }}">{{ m.get_kategori_display }}</span></td>
+                            <td>
+                                {% if m.jurusan %}
+                                <span class="badge badge-smk-green">{{ m.jurusan.kode }}</span>
+                                {% else %}
+                                <span class="badge badge-smk-yellow">Umum</span>
+                                {% endif %}
+                            </td>
+                            <td class="action-col">
+                                <button class="btn btn-sm btn-secondary" onclick="openEditMapel({{ m.id }}, '{{ m.nama }}', '{{ m.kode }}', '{{ m.kategori }}', '{{ m.jurusan.id|default:'' }}')">✏️ Edit</button>
+                                <a href="{% url 'hapus_mapel' m.id %}" class="btn btn-sm btn-danger" onclick="return confirm('⚠️ Hapus mata pelajaran {{ m.nama }}?')">🗑️ Hapus</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="empty-row">Belum ada mata pelajaran.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======== MODAL EDIT JURUSAN ======== -->
+<div class="modal" id="editJurusanModal">
+    <div class="modal-box modal-sm">
+        <div class="modal-header">
+            <h3>✏️ Edit Jurusan</h3>
+            <button onclick="closeModal('editJurusanModal')">✕</button>
+        </div>
+        <form method="POST" id="editJurusanForm">
+            {% csrf_token %}
+            <div class="form-group"><label>Nama Jurusan *</label><input type="text" name="nama_jurusan" id="editJurusanNama" required></div>
+            <div class="form-group"><label>Kode Jurusan *</label><input type="text" name="kode_jurusan" id="editJurusanKode" required style="text-transform:uppercase;"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('editJurusanModal')">Batal</button>
+                <button type="submit" class="btn btn-primary">💾 Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ======== MODAL EDIT KELAS ======== -->
+<div class="modal" id="editKelasModal">
+    <div class="modal-box modal-sm">
+        <div class="modal-header">
+            <h3>✏️ Edit Kelas</h3>
+            <button onclick="closeModal('editKelasModal')">✕</button>
+        </div>
+        <form method="POST" id="editKelasForm">
+            {% csrf_token %}
+            <div class="form-group"><label>Tingkat *</label>
+                <select name="tingkat" id="editKelasTingkat" required>
+                    <option value="X">Kelas X</option>
+                    <option value="XI">Kelas XI</option>
+                    <option value="XII">Kelas XII</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Nama Kelas *</label><input type="text" name="nama_kelas" id="editKelasNama" required></div>
+            <div class="form-group"><label>Jurusan *</label>
+                <select name="jurusan_id" id="editKelasJurusan" required>
+                    <option value="">-- Pilih Jurusan --</option>
+                    {% for j in jurusan_list %}<option value="{{ j.id }}">{{ j.kode }} - {{ j.nama }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('editKelasModal')">Batal</button>
+                <button type="submit" class="btn btn-primary">💾 Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ======== MODAL EDIT MAPEL ======== -->
+<div class="modal" id="editMapelModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>✏️ Edit Mata Pelajaran</h3>
+            <button onclick="closeModal('editMapelModal')">✕</button>
+        </div>
+        <form method="POST" id="editMapelForm">
+            {% csrf_token %}
+            <div class="form-group"><label>Nama Mapel *</label><input type="text" name="nama_mapel" id="editMapelNama" required></div>
+            <div class="form-group"><label>Kode Mapel *</label><input type="text" name="kode_mapel" id="editMapelKode" required style="text-transform:uppercase;"></div>
+            <div class="form-group"><label>Kategori *</label>
+                <select name="kategori" id="editMapelKategori" required>
+                    <option value="nasional">Muatan Nasional</option>
+                    <option value="kewilayahan">Muatan Kewilayahan</option>
+                    <option value="kejuruan">Muatan Kejuruan</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Jurusan (kosong = semua)</label>
+                <select name="jurusan_id_mapel" id="editMapelJurusan">
+                    <option value="">-- Semua Jurusan --</option>
+                    {% for j in jurusan_list %}<option value="{{ j.id }}">{{ j.kode }} - {{ j.nama }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('editMapelModal')">Batal</button>
+                <button type="submit" class="btn btn-primary">💾 Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openEditJurusan(id, nama, kode) {
+    document.getElementById('editJurusanNama').value = nama;
+    document.getElementById('editJurusanKode').value = kode;
+    document.getElementById('editJurusanForm').action = '/admin-dashboard/akademik/jurusan/edit/' + id + '/';
+    document.getElementById('editJurusanModal').classList.add('open');
+}
+function openEditKelas(id, tingkat, nama, jurusanId) {
+    document.getElementById('editKelasTingkat').value = tingkat;
+    document.getElementById('editKelasNama').value = nama;
+    document.getElementById('editKelasJurusan').value = jurusanId;
+    document.getElementById('editKelasForm').action = '/admin-dashboard/akademik/kelas/edit/' + id + '/';
+    document.getElementById('editKelasModal').classList.add('open');
+}
+function openEditMapel(id, nama, kode, kategori, jurusanId) {
+    document.getElementById('editMapelNama').value = nama;
+    document.getElementById('editMapelKode').value = kode;
+    document.getElementById('editMapelKategori').value = kategori;
+    document.getElementById('editMapelJurusan').value = jurusanId;
+    document.getElementById('editMapelForm').action = '/admin-dashboard/akademik/mapel/edit/' + id + '/';
+    document.getElementById('editMapelModal').classList.add('open');
+}
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+}
+function filterTable(input, tableId) {
+    const filter = input.value.toLowerCase();
+    const rows = document.getElementById(tableId).getElementsByTagName('tr');
+    for (let i = 1; i < rows.length; i++) {
+        rows[i].style.display = rows[i].textContent.toLowerCase().includes(filter) ? '' : 'none';
+    }
+}
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) m.classList.remove('open'); }));
+</script>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends 'lms/base.html' %}
+{% block title %}Daftar Akun - LMS SMK Mutual{% endblock %}
+{% block auth_content %}
+<div class="auth-wrapper">
+    <div class="auth-left">
+        <div class="auth-brand">
+            <div class="auth-logo">🎓</div>
+            <h1>SMK Mutual</h1>
+            <p>Kota Magelang</p>
+        </div>
+        <div class="auth-tagline" style="margin-top: auto;">
+            <h2>Bergabung Sekarang <span class="gradient-text">Gratis!</span></h2>
+            <p>Daftar menggunakan email institusi <strong>@smkmutual.sch.id</strong> atau NISN/NIP yang sudah didaftarkan admin.</p>
+            <div class="signup-steps">
+                <div class="step"><span class="step-num">1</span><span>Isi data diri</span></div>
+                <div class="step-arrow">→</div>
+                <div class="step"><span class="step-num">2</span><span>Verifikasi NISN/NIP</span></div>
+                <div class="step-arrow">→</div>
+                <div class="step"><span class="step-num">3</span><span>Mulai Belajar!</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="auth-right">
+        <div class="auth-card">
+            <div class="auth-card-header">
+                <h2>Buat Akun Baru</h2>
+                <p>Daftar sebagai siswa atau guru</p>
+            </div>
+            <form method="POST" class="auth-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="nama_lengkap">Nama Lengkap</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="nama_lengkap" name="nama_lengkap" placeholder="Nama lengkap sesuai data sekolah" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Institusi (Opsional)</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">✉️</span>
+                        <input type="email" id="email" name="email" placeholder="nama@smkmutual.sch.id">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="nip_nisn">NISN / NIP (Opsional jika ada email)</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🪪</span>
+                        <input type="text" id="nip_nisn" name="nip_nisn" placeholder="Nomor NISN (siswa) atau NIP (guru)">
+                    </div>
+                </div>
+                <div class="form-group" id="kelas-group">
+                    <label for="kelas_id">Pilih Kelas (untuk Siswa)</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🏫</span>
+                        <select id="kelas_id" name="kelas_id">
+                            <option value="">-- Pilih Kelas --</option>
+                            {% for kelas in kelas_list %}
+                            <option value="{{ kelas.id }}">{{ kelas.nama }} ({{ kelas.jurusan.kode }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="password" name="password" placeholder="Minimal 8 karakter" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('password')">👁</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="konfirmasi">Konfirmasi Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔐</span>
+                        <input type="password" id="konfirmasi" name="konfirmasi" placeholder="Ulangi password" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('konfirmasi')">👁</button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <span>Buat Akun</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+            </form>
+            <div class="auth-footer">
+                <p>Sudah punya akun? <a href="{% url 'login' %}">Masuk di sini</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock auth_content %}

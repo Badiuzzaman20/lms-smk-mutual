@@ -1,0 +1,78 @@
+{% extends 'lms/base.html' %}
+{% block title %}Monitoring - Admin LMS{% endblock %}
+{% block admin_monitor_active %}active{% endblock %}
+{% block page_title %}Monitoring & Laporan{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">Rekap Kehadiran & Nilai Siswa</h2>
+    <p class="page-subtitle">Pantau progres akademik seluruh siswa SMK Mutual</p>
+</div>
+
+<div class="table-card">
+    <div class="table-search-bar">
+        <input type="text" id="searchInput" placeholder="🔍 Cari nama siswa atau kelas..." oninput="filterTable(this.value)" class="search-input">
+    </div>
+    <table class="data-table" id="monitoringTable">
+        <thead>
+            <tr>
+                <th>Nama Siswa</th>
+                <th>Kelas</th>
+                <th>Jurusan</th>
+                <th>Total Pertemuan</th>
+                <th>Hadir</th>
+                <th>Kehadiran</th>
+                <th>Rata-rata Nilai</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for data in presensi_data %}
+        <tr>
+            <td><strong>{{ data.siswa.user.get_full_name }}</strong></td>
+            <td><span class="badge badge-kelas">{{ data.siswa.kelas.nama }}</span></td>
+            <td>{{ data.siswa.kelas.jurusan.kode }}</td>
+            <td>{{ data.total_absen }}</td>
+            <td>{{ data.hadir }}</td>
+            <td>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill {% if data.persen_hadir >= 75 %}progress-green{% elif data.persen_hadir >= 50 %}progress-yellow{% else %}progress-red{% endif %}"
+                         style="width: {{ data.persen_hadir }}%"></div>
+                </div>
+                <small>{{ data.persen_hadir }}%</small>
+            </td>
+            <td>
+                {% if data.rata_nilai != '-' %}
+                <span class="badge {% if data.rata_nilai >= 75 %}badge-success{% elif data.rata_nilai >= 60 %}badge-warning{% else %}badge-danger{% endif %}">
+                    {{ data.rata_nilai }}
+                </span>
+                {% else %}
+                <span class="text-muted">-</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="empty-row">Belum ada data siswa yang tercatat.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="section-header"><h3>Log Aktivitas Terbaru (20 User Terakhir Login)</h3></div>
+<div class="table-card">
+    <table class="data-table">
+        <thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Tanggal Bergabung</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for u in all_users %}
+        <tr>
+            <td><code>{{ u.username }}</code></td>
+            <td>{{ u.get_full_name }}</td>
+            <td><span class="badge badge-role-{{ u.role.name|default:'unknown' }}">{{ u.role.get_name_display|default:'Tidak Ada' }}</span></td>
+            <td>{{ u.date_joined|date:"d M Y, H:i" }}</td>
+            <td>{% if u.is_suspended %}<span class="badge badge-danger">Ditangguhkan</span>{% else %}<span class="badge badge-success">Aktif</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty-row">Tidak ada data user.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

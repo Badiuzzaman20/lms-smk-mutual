@@ -1,0 +1,236 @@
+{% extends 'lms/base.html' %}
+{% block title %}Manajemen Pengguna - Admin LMS{% endblock %}
+{% block admin_users_active %}active{% endblock %}
+{% block page_title %}Manajemen Pengguna{% endblock %}
+{% block content %}
+<div class="tabs-container">
+    <div class="smk-brand-bar"></div>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('guru-tab', this)">👩‍🏫 Data Guru ({{ guru_list|length }})</button>
+        <button class="tab-btn" onclick="switchTab('siswa-tab', this)">👨‍🎓 Data Siswa ({{ siswa_list|length }})</button>
+        <button class="tab-btn" onclick="switchTab('tambah-guru-tab', this)">➕ Tambah Guru</button>
+        <button class="tab-btn" onclick="switchTab('tambah-siswa-tab', this)">➕ Tambah Siswa</button>
+    </div>
+
+    <!-- Guru Table -->
+    <div id="guru-tab" class="tab-content active">
+        <div class="table-search-bar">
+            <input type="text" class="search-input" placeholder="🔍 Cari guru..." onkeyup="filterTable(this, 'guru-table')">
+        </div>
+        <div class="table-card">
+            <table class="data-table" id="guru-table">
+                <thead><tr><th>#</th><th>Nama Guru</th><th>NIP</th><th>Jabatan</th><th>Email</th><th>Status</th><th class="action-col">Aksi</th></tr></thead>
+                <tbody>
+                {% for guru in guru_list %}
+                <tr>
+                    <td style="color:var(--text-muted);">{{ forloop.counter }}</td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div class="user-avatar" style="width:32px;height:32px;font-size:0.75rem;">{{ guru.user.first_name|first|upper }}{{ guru.user.last_name|first|upper }}</div>
+                            <strong>{{ guru.user.get_full_name }}</strong>
+                        </div>
+                    </td>
+                    <td><code>{{ guru.nip }}</code></td>
+                    <td>{{ guru.jabatan }}</td>
+                    <td style="color:var(--text-muted);font-size:0.82rem;">{{ guru.user.email|default:'-' }}</td>
+                    <td>
+                        {% if guru.user.is_suspended %}
+                        <span class="badge badge-danger">Ditangguhkan</span>
+                        {% else %}
+                        <span class="badge badge-success">Aktif</span>
+                        {% endif %}
+                    </td>
+                    <td class="action-col">
+                        <button class="btn btn-sm btn-secondary" onclick="openEditGuru({{ guru.id }}, '{{ guru.user.get_full_name }}', '{{ guru.nip }}', '{{ guru.jabatan }}', '{{ guru.user.email }}')">✏️ Edit</button>
+                        <a href="{% url 'toggle_suspend' guru.user.id %}" class="btn btn-sm {% if guru.user.is_suspended %}btn-success{% else %}btn-warning{% endif %}" onclick="return confirm('Yakin ubah status akun ini?')">
+                            {% if guru.user.is_suspended %}✅ Aktifkan{% else %}⏸ Tangguhkan{% endif %}
+                        </a>
+                        <a href="{% url 'hapus_user' guru.user.id %}" class="btn btn-sm btn-danger" onclick="return confirm('⚠️ Hapus permanen akun {{ guru.user.get_full_name }}?')">🗑️ Hapus</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center empty-row">Belum ada data guru.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Siswa Table -->
+    <div id="siswa-tab" class="tab-content">
+        <div class="table-search-bar">
+            <input type="text" class="search-input" placeholder="🔍 Cari siswa..." onkeyup="filterTable(this, 'siswa-table')">
+        </div>
+        <div class="table-card">
+            <table class="data-table" id="siswa-table">
+                <thead><tr><th>#</th><th>Nama Siswa</th><th>NISN</th><th>Kelas</th><th>Jurusan</th><th>Status</th><th class="action-col">Aksi</th></tr></thead>
+                <tbody>
+                {% for siswa in siswa_list %}
+                <tr>
+                    <td style="color:var(--text-muted);">{{ forloop.counter }}</td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div class="user-avatar" style="width:32px;height:32px;font-size:0.75rem;">{{ siswa.user.first_name|first|upper }}{{ siswa.user.last_name|first|upper }}</div>
+                            <strong>{{ siswa.user.get_full_name }}</strong>
+                        </div>
+                    </td>
+                    <td><code>{{ siswa.nisn }}</code></td>
+                    <td><span class="badge badge-kelas">{{ siswa.kelas.nama }}</span></td>
+                    <td><span class="badge badge-smk-green">{{ siswa.kelas.jurusan.kode }}</span></td>
+                    <td>
+                        {% if siswa.user.is_suspended %}
+                        <span class="badge badge-danger">Ditangguhkan</span>
+                        {% else %}
+                        <span class="badge badge-success">Aktif</span>
+                        {% endif %}
+                    </td>
+                    <td class="action-col">
+                        <button class="btn btn-sm btn-secondary" onclick="openEditSiswa({{ siswa.id }}, '{{ siswa.user.get_full_name }}', '{{ siswa.nisn }}', {{ siswa.kelas.id }}, '{{ siswa.user.email }}')">✏️ Edit</button>
+                        <a href="{% url 'toggle_suspend' siswa.user.id %}" class="btn btn-sm {% if siswa.user.is_suspended %}btn-success{% else %}btn-warning{% endif %}" onclick="return confirm('Yakin ubah status akun ini?')">
+                            {% if siswa.user.is_suspended %}✅ Aktifkan{% else %}⏸ Tangguhkan{% endif %}
+                        </a>
+                        <a href="{% url 'hapus_user' siswa.user.id %}" class="btn btn-sm btn-danger" onclick="return confirm('⚠️ Hapus permanen akun {{ siswa.user.get_full_name }}?')">🗑️ Hapus</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center empty-row">Belum ada data siswa.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tambah Guru Form -->
+    <div id="tambah-guru-tab" class="tab-content">
+        <div class="form-card" style="max-width:700px;margin:auto;">
+            <h3>➕ Tambah Data Guru Baru</h3>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-top:-4px;">Isi semua kolom yang diperlukan untuk mendaftarkan guru baru.</p>
+            <form method="POST" action="{% url 'tambah_guru' %}">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="form-group"><label>Nama Lengkap *</label><input type="text" name="nama" required placeholder="Nama lengkap guru"></div>
+                    <div class="form-group"><label>NIP *</label><input type="text" name="nip" required placeholder="Nomor Induk Pegawai"></div>
+                    <div class="form-group"><label>Jabatan</label><input type="text" name="jabatan" value="Guru Mata Pelajaran" placeholder="Jabatan guru"></div>
+                    <div class="form-group"><label>Email</label><input type="email" name="email" placeholder="email@smkmutual.sch.id"></div>
+                    <div class="form-group"><label>Password *</label><input type="password" name="password" required placeholder="Password login guru"></div>
+                </div>
+                <div style="margin-top:8px;">
+                    <button type="submit" class="btn btn-primary btn-lg">💾 Simpan Guru</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tambah Siswa Form -->
+    <div id="tambah-siswa-tab" class="tab-content">
+        <div class="form-card" style="max-width:700px;margin:auto;">
+            <h3>➕ Tambah Data Siswa Baru</h3>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-top:-4px;">Isi semua kolom yang diperlukan untuk mendaftarkan siswa baru.</p>
+            <form method="POST" action="{% url 'tambah_siswa' %}">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="form-group"><label>Nama Lengkap *</label><input type="text" name="nama" required placeholder="Nama lengkap siswa"></div>
+                    <div class="form-group"><label>NISN *</label><input type="text" name="nisn" required placeholder="Nomor Induk Siswa Nasional"></div>
+                    <div class="form-group"><label>Kelas *</label>
+                        <select name="kelas_id" required>
+                            <option value="">-- Pilih Kelas --</option>
+                            {% for k in kelas_list %}
+                            <option value="{{ k.id }}">{{ k.nama }} ({{ k.jurusan.kode }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Email</label><input type="email" name="email" placeholder="email@smkmutual.sch.id"></div>
+                    <div class="form-group"><label>Password *</label><input type="password" name="password" required placeholder="Password login siswa"></div>
+                </div>
+                <div style="margin-top:8px;">
+                    <button type="submit" class="btn btn-primary btn-lg">💾 Simpan Siswa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Guru -->
+<div class="modal" id="editGuruModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>✏️ Edit Data Guru</h3>
+            <button onclick="closeModal('editGuruModal')">✕</button>
+        </div>
+        <form method="POST" id="editGuruForm">
+            {% csrf_token %}
+            <div class="form-group"><label>Nama Lengkap *</label><input type="text" name="nama" id="editGuruNama" required></div>
+            <div class="form-group"><label>NIP *</label><input type="text" name="nip" id="editGuruNip" required></div>
+            <div class="form-group"><label>Jabatan</label><input type="text" name="jabatan" id="editGuruJabatan"></div>
+            <div class="form-group"><label>Email</label><input type="email" name="email" id="editGuruEmail"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('editGuruModal')">Batal</button>
+                <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Edit Siswa -->
+<div class="modal" id="editSiswaModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>✏️ Edit Data Siswa</h3>
+            <button onclick="closeModal('editSiswaModal')">✕</button>
+        </div>
+        <form method="POST" id="editSiswaForm">
+            {% csrf_token %}
+            <div class="form-group"><label>Nama Lengkap *</label><input type="text" name="nama" id="editSiswaNama" required></div>
+            <div class="form-group"><label>NISN *</label><input type="text" name="nisn" id="editSiswaNisn" required></div>
+            <div class="form-group"><label>Kelas *</label>
+                <select name="kelas_id" id="editSiswaKelas" required>
+                    <option value="">-- Pilih Kelas --</option>
+                    {% for k in kelas_list %}
+                    <option value="{{ k.id }}">{{ k.nama }} ({{ k.jurusan.kode }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group"><label>Email</label><input type="email" name="email" id="editSiswaEmail"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('editSiswaModal')">Batal</button>
+                <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openEditGuru(id, nama, nip, jabatan, email) {
+    document.getElementById('editGuruNama').value = nama;
+    document.getElementById('editGuruNip').value = nip;
+    document.getElementById('editGuruJabatan').value = jabatan;
+    document.getElementById('editGuruEmail').value = email;
+    document.getElementById('editGuruForm').action = '/admin-dashboard/users/guru/edit/' + id + '/';
+    document.getElementById('editGuruModal').classList.add('open');
+}
+function openEditSiswa(id, nama, nisn, kelasId, email) {
+    document.getElementById('editSiswaNama').value = nama;
+    document.getElementById('editSiswaNisn').value = nisn;
+    document.getElementById('editSiswaKelas').value = kelasId;
+    document.getElementById('editSiswaEmail').value = email;
+    document.getElementById('editSiswaForm').action = '/admin-dashboard/users/siswa/edit/' + id + '/';
+    document.getElementById('editSiswaModal').classList.add('open');
+}
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+}
+function filterTable(input, tableId) {
+    const filter = input.value.toLowerCase();
+    const rows = document.getElementById(tableId).getElementsByTagName('tr');
+    for (let i = 1; i < rows.length; i++) {
+        const text = rows[i].textContent.toLowerCase();
+        rows[i].style.display = text.includes(filter) ? '' : 'none';
+    }
+}
+// Close modal on backdrop click
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) m.classList.remove('open'); }));
+</script>
+{% endblock %}

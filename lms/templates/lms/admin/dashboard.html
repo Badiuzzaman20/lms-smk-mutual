@@ -1,0 +1,103 @@
+{% extends 'lms/base.html' %}
+{% block title %}Dashboard Admin - LMS SMK Mutual{% endblock %}
+{% block admin_dash_active %}active{% endblock %}
+{% block page_title %}Dashboard Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title">Selamat Datang, Administrator 👋</h2>
+        <p class="page-subtitle">Pantau seluruh aktivitas akademik SMK Mutual Kota Magelang</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card stat-blue">
+        <div class="stat-icon">👨‍🎓</div>
+        <div class="stat-info">
+            <div class="stat-number">{{ total_siswa }}</div>
+            <div class="stat-label">Total Siswa</div>
+        </div>
+        <div class="stat-bg-icon">👨‍🎓</div>
+    </div>
+    <div class="stat-card stat-green">
+        <div class="stat-icon">👩‍🏫</div>
+        <div class="stat-info">
+            <div class="stat-number">{{ total_guru }}</div>
+            <div class="stat-label">Total Guru</div>
+        </div>
+        <div class="stat-bg-icon">👩‍🏫</div>
+    </div>
+    <div class="stat-card stat-purple">
+        <div class="stat-icon">🏫</div>
+        <div class="stat-info">
+            <div class="stat-number">{{ total_kelas }}</div>
+            <div class="stat-label">Total Kelas</div>
+        </div>
+        <div class="stat-bg-icon">🏫</div>
+    </div>
+    <div class="stat-card stat-orange">
+        <div class="stat-icon">📚</div>
+        <div class="stat-info">
+            <div class="stat-number">{{ total_mapel }}</div>
+            <div class="stat-label">Mata Pelajaran</div>
+        </div>
+        <div class="stat-bg-icon">📚</div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="section-header">
+    <h3>Aksi Cepat</h3>
+</div>
+<div class="quick-actions">
+    <a href="{% url 'tambah_guru' %}" class="quick-action-btn">
+        <span class="qa-icon">➕</span><span>Tambah Guru</span>
+    </a>
+    <a href="{% url 'manage_users' %}" class="quick-action-btn">
+        <span class="qa-icon">👥</span><span>Kelola Pengguna</span>
+    </a>
+    <a href="{% url 'manage_jadwal' %}" class="quick-action-btn">
+        <span class="qa-icon">📅</span><span>Atur Jadwal</span>
+    </a>
+    <a href="{% url 'monitoring' %}" class="quick-action-btn">
+        <span class="qa-icon">📈</span><span>Lihat Laporan</span>
+    </a>
+</div>
+
+<!-- Today's Schedule -->
+<div class="section-header">
+    <h3>Jadwal KBM Hari Ini</h3>
+</div>
+{% if jadwal_hari_ini %}
+<div class="table-card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Jam</th>
+                <th>Mata Pelajaran</th>
+                <th>Kelas</th>
+                <th>Guru</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for jadwal in jadwal_hari_ini %}
+            <tr>
+                <td><span class="badge badge-time">{{ jadwal.jam_mulai|time:"H:i" }} - {{ jadwal.jam_selesai|time:"H:i" }}</span></td>
+                <td><strong>{{ jadwal.mata_pelajaran.nama }}</strong></td>
+                <td><span class="badge badge-kelas">{{ jadwal.kelas.nama }}</span></td>
+                <td>{{ jadwal.guru.user.get_full_name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📅</div>
+    <p>Tidak ada jadwal KBM untuk hari ini.</p>
+    <a href="{% url 'manage_jadwal' %}" class="btn btn-primary">Tambah Jadwal</a>
+</div>
+{% endif %}
+{% endblock %}

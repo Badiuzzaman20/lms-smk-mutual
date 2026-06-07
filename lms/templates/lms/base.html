@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LMS SMK Mutual Kota Magelang - Platform Belajar Digital Terpadu">
+    <title>{% block title %}LMS SMK Mutual{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'lms/css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo">
+                <span class="brand-icon">🎓</span>
+            </div>
+            <div class="brand-text">
+                <h1 class="brand-name">SMK Mutual</h1>
+                <p class="brand-sub">Learning Management</p>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            {% if user.role.name == 'admin' %}
+            <div class="nav-section-title">ADMIN PANEL</div>
+            <a href="{% url 'admin_dashboard' %}" class="nav-item {% block admin_dash_active %}{% endblock %}">
+                <span class="nav-icon">📊</span><span>Dashboard</span>
+            </a>
+            <a href="{% url 'manage_users' %}" class="nav-item {% block admin_users_active %}{% endblock %}">
+                <span class="nav-icon">👥</span><span>Manajemen Pengguna</span>
+            </a>
+            <a href="{% url 'manage_akademik' %}" class="nav-item {% block admin_akademik_active %}{% endblock %}">
+                <span class="nav-icon">🏫</span><span>Data Akademik</span>
+            </a>
+            <a href="{% url 'manage_jadwal' %}" class="nav-item {% block admin_jadwal_active %}{% endblock %}">
+                <span class="nav-icon">📅</span><span>Jadwal KBM</span>
+            </a>
+            <a href="{% url 'monitoring' %}" class="nav-item {% block admin_monitor_active %}{% endblock %}">
+                <span class="nav-icon">📈</span><span>Monitoring</span>
+            </a>
+
+            {% elif user.role.name == 'guru' %}
+            <div class="nav-section-title">RUANG GURU</div>
+            <a href="{% url 'guru_dashboard' %}" class="nav-item {% block guru_dash_active %}{% endblock %}">
+                <span class="nav-icon">🏠</span><span>Dashboard</span>
+            </a>
+            <a href="{% url 'guru_penilaian' %}" class="nav-item {% block guru_nilai_active %}{% endblock %}">
+                <span class="nav-icon">✅</span><span>Ruang Penilaian</span>
+            </a>
+            <a href="{% url 'guru_pkl_monitoring' %}" class="nav-item {% block guru_pkl_active %}{% endblock %}">
+                <span class="nav-icon">🏭</span><span>Monitoring PKL</span>
+            </a>
+
+            {% elif user.role.name == 'siswa' %}
+            <div class="nav-section-title">RUANG SISWA</div>
+            <a href="{% url 'siswa_dashboard' %}" class="nav-item {% block siswa_dash_active %}{% endblock %}">
+                <span class="nav-icon">🏠</span><span>Dashboard</span>
+            </a>
+            <a href="{% url 'siswa_portofolio' %}" class="nav-item {% block siswa_porto_active %}{% endblock %}">
+                <span class="nav-icon">💼</span><span>Portofolio</span>
+            </a>
+            <a href="{% url 'siswa_pkl' %}" class="nav-item {% block siswa_pkl_active %}{% endblock %}">
+                <span class="nav-icon">🏭</span><span>Jurnal PKL</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+                <div class="user-details">
+                    <p class="user-name">{{ user.get_full_name }}</p>
+                    <p class="user-role">{{ user.role.get_name_display }}</p>
+                </div>
+            </div>
+            <a href="{% url 'logout' %}" class="logout-btn" title="Logout">⏻</a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-wrapper">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle Sidebar">☰</button>
+            <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+            <div class="topbar-actions">
+                <span class="topbar-time" id="liveTime"></span>
+            </div>
+        </header>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                <span>{{ message }}</span>
+                <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Page Content -->
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% else %}
+        {% if messages %}
+        <div class="messages-container messages-float">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                <span>{{ message }}</span>
+                <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+
+    <script src="{% static 'lms/js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

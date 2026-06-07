@@ -1,0 +1,229 @@
+{% extends 'lms/base.html' %}
+{% block title %}{{ jadwal.mata_pelajaran.nama }} - Kelas {{ jadwal.kelas.nama }}{% endblock %}
+{% block guru_dash_active %}active{% endblock %}
+{% block page_title %}{{ jadwal.mata_pelajaran.nama }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{% url 'guru_dashboard' %}" class="breadcrumb-link">← Dashboard</a>
+        <h2 class="page-title">{{ jadwal.mata_pelajaran.nama }}</h2>
+        <p class="page-subtitle">Kelas {{ jadwal.kelas.nama }} &bull; {{ jadwal.hari }}, {{ jadwal.jam_mulai|time:"H:i" }}-{{ jadwal.jam_selesai|time:"H:i" }} &bull; {{ siswa_count }} Siswa</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('modal-pertemuan')">➕ Tambah Pertemuan</button>
+</div>
+
+{% for item in pertemuan_list %}
+<div class="pertemuan-card">
+    <div class="pertemuan-header" onclick="toggleSection('pertemuan-{{ item.urutan }}')">
+        <div class="pertemuan-title">
+            <span class="pertemuan-num">{{ item.urutan }}</span>
+            <div>
+                <strong>{{ item.judul }}</strong>
+                {% if item.deskripsi %}<p class="pertemuan-desc">{{ item.deskripsi }}</p>{% endif %}
+            </div>
+        </div>
+        <div class="pertemuan-actions">
+            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); openModal('modal-materi-{{ item.id }}')">📄 Materi</button>
+            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); openModal('modal-presensi-{{ item.id }}')">✅ Presensi</button>
+            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); openModal('modal-forum-{{ item.id }}')">💬 Forum</button>
+            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); openModal('modal-live-{{ item.id }}')">📹 Live</button>
+            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); openModal('modal-tugas-{{ item.id }}')">📝 Tugas</button>
+            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openModal('modal-kuis-{{ item.id }}')">🧠 Kuis</button>
+            <span class="chevron">▼</span>
+        </div>
+    </div>
+
+    <div id="pertemuan-{{ item.urutan }}" class="pertemuan-body">
+        <!-- Materi -->
+        {% if item.materi_list.all %}
+        <div class="content-section">
+            <h4>📚 Materi Pembelajaran</h4>
+            <div class="materi-grid">
+                {% for m in item.materi_list.all %}
+                <div class="materi-item materi-{{ m.tipe }}">
+                    <span class="materi-icon">{% if m.tipe == 'modul' %}📄{% elif m.tipe == 'audiovisual' %}🎬{% else %}🔗{% endif %}</span>
+                    <div>
+                        <strong>{{ m.judul }}</strong>
+                        {% if m.deskripsi %}<p>{{ m.deskripsi }}</p>{% endif %}
+                        {% if m.link_eksternal %}<a href="{{ m.link_eksternal }}" target="_blank" class="link-ext">Buka Link →</a>{% endif %}
+                        {% if m.file %}<a href="{{ m.file.url }}" target="_blank" class="link-ext">Unduh File →</a>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Presensi Status -->
+        {% for pr in item.presensi_activity.all %}
+        <div class="content-section">
+            <h4>✅ Presensi Aktif</h4>
+            <div class="info-chip {% if pr.batas_waktu > now %}chip-green{% else %}chip-red{% endif %}">
+                Batas waktu: {{ pr.batas_waktu|date:"d M Y, H:i" }}
+                {% if pr.batas_waktu > now %} (Masih Terbuka){% else %} (Sudah Ditutup){% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Forum -->
+        {% for forum in item.forum_list.all %}
+        <div class="content-section">
+            <h4>💬 Forum: {{ forum.judul }}</h4>
+            <p class="forum-desc">{{ forum.deskripsi }}</p>
+            <div class="komentar-list">
+                {% for k in forum.komentar_list.all %}
+                <div class="komentar-item">
+                    <div class="komentar-avatar">{{ k.user.first_name|first|upper }}</div>
+                    <div class="komentar-body">
+                        <strong>{{ k.user.get_full_name }}</strong><span class="komentar-time">{{ k.created_at|date:"d M H:i" }}</span>
+                        <p>{{ k.konten }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Live Class -->
+        {% for lc in item.live_class.all %}
+        <div class="content-section">
+            <h4>📹 Live Class</h4>
+            <a href="{{ lc.link }}" target="_blank" class="btn btn-primary">
+                Bergabung {{ lc.get_platform_display }} →
+            </a>
+            <span class="text-muted">{{ lc.waktu_mulai|date:"d M Y, H:i" }}</span>
+        </div>
+        {% endfor %}
+
+        <!-- Tugas & Kuis -->
+        {% for tu in item.tugas_ujian_list.all %}
+        <div class="content-section">
+            <h4>{% if tu.tipe == 'tugas' %}📝{% else %}🧠{% endif %} {{ tu.judul }}</h4>
+            <p>{{ tu.deskripsi }}</p>
+            <div class="info-chip chip-orange">Deadline: {{ tu.deadline|date:"d M Y, H:i" }}</div>
+            {% if tu.tipe == 'kuis' %}
+            <a href="{% url 'tambah_soal' tu.id %}" class="btn btn-sm btn-outline">Kelola Soal ({{ tu.soal_list.count }})</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modals for this pertemuan -->
+<!-- Materi Modal -->
+<div class="modal" id="modal-materi-{{ item.id }}">
+    <div class="modal-box">
+        <div class="modal-header"><h3>Tambah Materi - Pertemuan {{ item.urutan }}</h3><button onclick="closeModal('modal-materi-{{ item.id }}')">✕</button></div>
+        <form method="POST" action="{% url 'tambah_materi' item.id %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group"><label>Judul</label><input type="text" name="judul" required placeholder="Judul materi"></div>
+            <div class="form-group"><label>Tipe</label>
+                <select name="tipe" required onchange="toggleMateriFields(this, '{{ item.id }}')">
+                    <option value="modul">📄 Modul Digital</option>
+                    <option value="audiovisual">🎬 Audiovisual</option>
+                    <option value="link">🔗 Link Eksternal</option>
+                </select>
+            </div>
+            <div class="form-group" id="field-file-{{ item.id }}"><label>Upload File</label><input type="file" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx"></div>
+            <div class="form-group" id="field-video-{{ item.id }}" style="display:none"><label>URL / Embed Video YouTube</label><input type="text" name="video_embed" placeholder="https://youtube.com/..."></div>
+            <div class="form-group" id="field-link-{{ item.id }}" style="display:none"><label>Link Eksternal</label><input type="url" name="link_eksternal" placeholder="https://..."></div>
+            <div class="form-group"><label>Deskripsi</label><textarea name="deskripsi" rows="2" placeholder="Deskripsi singkat"></textarea></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modal-materi-{{ item.id }}')">Batal</button><button type="submit" class="btn btn-primary">Simpan</button></div>
+        </form>
+    </div>
+</div>
+
+<!-- Presensi Modal -->
+<div class="modal" id="modal-presensi-{{ item.id }}">
+    <div class="modal-box modal-sm">
+        <div class="modal-header"><h3>Buka Presensi - Pertemuan {{ item.urutan }}</h3><button onclick="closeModal('modal-presensi-{{ item.id }}')">✕</button></div>
+        <form method="POST" action="{% url 'buka_presensi' item.id %}">
+            {% csrf_token %}
+            <div class="form-group"><label>Durasi Presensi (menit)</label><input type="number" name="batas_menit" value="30" min="5" max="120" required></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modal-presensi-{{ item.id }}')">Batal</button><button type="submit" class="btn btn-primary">Buka Presensi</button></div>
+        </form>
+    </div>
+</div>
+
+<!-- Forum Modal -->
+<div class="modal" id="modal-forum-{{ item.id }}">
+    <div class="modal-box">
+        <div class="modal-header"><h3>Buat Forum Diskusi</h3><button onclick="closeModal('modal-forum-{{ item.id }}')">✕</button></div>
+        <form method="POST" action="{% url 'tambah_forum' item.id %}">
+            {% csrf_token %}
+            <div class="form-group"><label>Judul Forum</label><input type="text" name="judul" required placeholder="Topik diskusi"></div>
+            <div class="form-group"><label>Deskripsi / Pertanyaan</label><textarea name="deskripsi" rows="3" required placeholder="Tuliskan topik atau pertanyaan..."></textarea></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modal-forum-{{ item.id }}')">Batal</button><button type="submit" class="btn btn-primary">Buat Forum</button></div>
+        </form>
+    </div>
+</div>
+
+<!-- Live Class Modal -->
+<div class="modal" id="modal-live-{{ item.id }}">
+    <div class="modal-box modal-sm">
+        <div class="modal-header"><h3>Tambah Link Live Class</h3><button onclick="closeModal('modal-live-{{ item.id }}')">✕</button></div>
+        <form method="POST" action="{% url 'tambah_live' item.id %}">
+            {% csrf_token %}
+            <div class="form-group"><label>Platform</label>
+                <select name="platform"><option value="gmeet">Google Meet</option><option value="zoom">Zoom</option></select>
+            </div>
+            <div class="form-group"><label>Link Meeting</label><input type="url" name="link" required placeholder="https://meet.google.com/..."></div>
+            <div class="form-group"><label>Waktu Mulai</label><input type="datetime-local" name="waktu_mulai" required></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modal-live-{{ item.id }}')">Batal</button><button type="submit" class="btn btn-primary">Simpan</button></div>
+        </form>
+    </div>
+</div>
+
+<!-- Tugas Modal -->
+<div class="modal" id="modal-tugas-{{ item.id }}">
+    <div class="modal-box">
+        <div class="modal-header"><h3>Buat Tugas Baru</h3><button onclick="closeModal('modal-tugas-{{ item.id }}')">✕</button></div>
+        <form method="POST" action="{% url 'tambah_tugas' item.id %}">
+            {% csrf_token %}
+            <div class="form-group"><label>Judul Tugas</label><input type="text" name="judul" required placeholder="Nama tugas"></div>
+            <div class="form-group"><label>Deskripsi / Instruksi</label><textarea name="deskripsi" rows="3" required placeholder="Instruksi pengerjaan tugas..."></textarea></div>
+            <div class="form-group"><label>Deadline</label><input type="datetime-local" name="deadline" required></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modal-tugas-{{ item.id }}')">Batal</button><button type="submit" class="btn btn-primary">Buat Tugas</button></div>
+        </form>
+    </div>
+</div>
+
+<!-- Kuis Modal -->
+<div class="modal" id="modal-kuis-{{ item.id }}">
+    <div class="modal-box">
+        <div class="modal-header"><h3>Buat Kuis / CBT</h3><button onclick="closeModal('modal-kuis-{{ item.id }}')">✕</button></div>
+        <form method="POST" action="{% url 'tambah_kuis' item.id %}">
+            {% csrf_token %}
+            <div class="form-group"><label>Judul Kuis</label><input type="text" name="judul" required placeholder="Nama kuis/ujian"></div>
+            <div class="form-group"><label>Deskripsi</label><textarea name="deskripsi" rows="2" required></textarea></div>
+            <div class="form-group"><label>Deadline</label><input type="datetime-local" name="deadline" required></div>
+            <div class="form-group"><label>Durasi Pengerjaan (menit)</label><input type="number" name="waktu_pengerjaan" value="60" min="10" max="180"></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modal-kuis-{{ item.id }}')">Batal</button><button type="submit" class="btn btn-primary">Buat & Tambah Soal →</button></div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Add Pertemuan Modal -->
+<div class="modal" id="modal-pertemuan">
+    <div class="modal-box modal-sm">
+        <div class="modal-header"><h3>Tambah Pertemuan Baru</h3><button onclick="closeModal('modal-pertemuan')">✕</button></div>
+        <form method="POST" action="{% url 'tambah_pertemuan' jadwal.id %}">
+            {% csrf_token %}
+            <div class="form-group"><label>Judul Pertemuan</label><input type="text" name="judul" required placeholder="e.g. Pertemuan 1 - Pengenalan Materi"></div>
+            <div class="form-group"><label>Deskripsi (Opsional)</label><textarea name="deskripsi" rows="2" placeholder="Ringkasan pertemuan ini..."></textarea></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modal-pertemuan')">Batal</button><button type="submit" class="btn btn-primary">Tambah</button></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleMateriFields(select, pid) {
+    document.getElementById('field-file-'+pid).style.display = select.value === 'modul' ? 'block' : 'none';
+    document.getElementById('field-video-'+pid).style.display = select.value === 'audiovisual' ? 'block' : 'none';
+    document.getElementById('field-link-'+pid).style.display = select.value === 'link' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

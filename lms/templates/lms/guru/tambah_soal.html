@@ -1,0 +1,83 @@
+{% extends 'lms/base.html' %}
+{% block title %}Tambah Soal Kuis - LMS{% endblock %}
+{% block page_title %}Editor Soal Kuis{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{% url 'guru_dashboard' %}" class="breadcrumb-link">← Kembali</a>
+        <h2 class="page-title">🧠 {{ kuis.judul }}</h2>
+        <p class="page-subtitle">{{ soal_list.count }} soal tersimpan &bull; Durasi: {{ kuis.waktu_pengerjaan }} menit</p>
+    </div>
+</div>
+<div class="split-layout">
+    <div class="form-card">
+        <h3>Tambah Soal Baru</h3>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Tipe Soal</label>
+                <select name="tipe_soal" onchange="toggleEsai(this)">
+                    <option value="pilihan_ganda">Pilihan Ganda</option>
+                    <option value="esai">Esai</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Pertanyaan</label>
+                <textarea name="pertanyaan" rows="3" required placeholder="Tuliskan pertanyaan..."></textarea>
+            </div>
+            <div id="opsi-section">
+                <div class="form-group"><label>A.</label><input type="text" name="opsi_a" placeholder="Opsi A"></div>
+                <div class="form-group"><label>B.</label><input type="text" name="opsi_b" placeholder="Opsi B"></div>
+                <div class="form-group"><label>C.</label><input type="text" name="opsi_c" placeholder="Opsi C"></div>
+                <div class="form-group"><label>D.</label><input type="text" name="opsi_d" placeholder="Opsi D"></div>
+                <div class="form-group"><label>E.</label><input type="text" name="opsi_e" placeholder="Opsi E (opsional)"></div>
+                <div class="form-group">
+                    <label>Jawaban Benar</label>
+                    <select name="jawaban_benar">
+                        <option value="A">A</option><option value="B">B</option>
+                        <option value="C">C</option><option value="D">D</option><option value="E">E</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">+ Tambah Soal</button>
+        </form>
+    </div>
+
+    <div style="flex:1.5">
+        <div class="table-card">
+            <h3 style="padding: 1rem 1.5rem 0.5rem;">Daftar Soal ({{ soal_list.count }})</h3>
+            {% for soal in soal_list %}
+            <div class="soal-item">
+                <div class="soal-num">{{ forloop.counter }}</div>
+                <div class="soal-body">
+                    <p class="soal-text">{{ soal.pertanyaan }}</p>
+                    {% if soal.tipe == 'pilihan_ganda' %}
+                    <div class="soal-opsi">
+                        {% if soal.opsi_a %}<span class="opsi {% if soal.jawaban_benar == 'A' %}opsi-benar{% endif %}">A. {{ soal.opsi_a }}</span>{% endif %}
+                        {% if soal.opsi_b %}<span class="opsi {% if soal.jawaban_benar == 'B' %}opsi-benar{% endif %}">B. {{ soal.opsi_b }}</span>{% endif %}
+                        {% if soal.opsi_c %}<span class="opsi {% if soal.jawaban_benar == 'C' %}opsi-benar{% endif %}">C. {{ soal.opsi_c }}</span>{% endif %}
+                        {% if soal.opsi_d %}<span class="opsi {% if soal.jawaban_benar == 'D' %}opsi-benar{% endif %}">D. {{ soal.opsi_d }}</span>{% endif %}
+                        {% if soal.opsi_e %}<span class="opsi {% if soal.jawaban_benar == 'E' %}opsi-benar{% endif %}">E. {{ soal.opsi_e }}</span>{% endif %}
+                    </div>
+                    {% else %}
+                    <span class="badge badge-info">Soal Esai</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <div class="empty-icon">📝</div>
+                <p>Belum ada soal. Tambahkan soal pertama!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function toggleEsai(sel) {
+    document.getElementById('opsi-section').style.display = sel.value === 'esai' ? 'none' : 'block';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'lms/base.html' %}
+{% block title %}Portofolio - LMS SMK Mutual{% endblock %}
+{% block siswa_porto_active %}active{% endblock %}
+{% block page_title %}Portofolio Digital{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title">💼 Portofolio Digital</h2>
+        <p class="page-subtitle">Showcase karya terbaik dan hasil kerja praktikmu</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('modal-porto')">➕ Tambah Karya</button>
+</div>
+
+<div class="porto-grid">
+    {% for p in porto_list %}
+    <div class="porto-card">
+        <div class="porto-kategori-badge badge-kategori-porto-{{ p.kategori }}">
+            {% if p.kategori == 'proyek' %}🚀{% elif p.kategori == 'source_code' %}💻{% elif p.kategori == 'sertifikat' %}🏆{% else %}🔬{% endif %}
+            {{ p.get_kategori_display }}
+        </div>
+        <h4 class="porto-title">{{ p.judul }}</h4>
+        <p class="porto-desc">{{ p.deskripsi|truncatechars:120 }}</p>
+        <div class="porto-actions">
+            {% if p.link_tautan %}<a href="{{ p.link_tautan }}" target="_blank" class="btn btn-sm btn-outline">🔗 Lihat Proyek</a>{% endif %}
+            {% if p.file_dokumentasi %}<a href="{{ p.file_dokumentasi.url }}" target="_blank" class="btn btn-sm btn-outline">📎 Unduh</a>{% endif %}
+        </div>
+        <div class="porto-date">{{ p.created_at|date:"d M Y" }}</div>
+    </div>
+    {% empty %}
+    <div class="empty-state" style="grid-column: 1/-1;">
+        <div class="empty-icon">💼</div>
+        <p>Belum ada portofolio. Unggah karya pertamamu!</p>
+        <button class="btn btn-primary" onclick="openModal('modal-porto')">Tambah Sekarang</button>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="modal" id="modal-porto">
+    <div class="modal-box">
+        <div class="modal-header"><h3>Tambah Karya Portofolio</h3><button onclick="closeModal('modal-porto')">✕</button></div>
+        <form method="POST" action="{% url 'tambah_portofolio' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group"><label>Judul Karya</label><input type="text" name="judul" required placeholder="Nama proyek atau karya"></div>
+            <div class="form-group"><label>Kategori</label>
+                <select name="kategori">
+                    <option value="proyek">🚀 Karya Proyek</option>
+                    <option value="source_code">💻 Source Code / Git</option>
+                    <option value="sertifikat">🏆 Sertifikat Kompetensi</option>
+                    <option value="praktik">🔬 Dokumentasi Praktik</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Deskripsi</label><textarea name="deskripsi" rows="3" required placeholder="Ceritakan tentang karyamu..."></textarea></div>
+            <div class="form-group"><label>Link Tautan (GitHub/Live/YouTube)</label><input type="url" name="link_tautan" placeholder="https://..."></div>
+            <div class="form-group"><label>Upload File Dokumentasi (opsional)</label><input type="file" name="file_dokumentasi"></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modal-porto')">Batal</button><button type="submit" class="btn btn-primary">🚀 Unggah Karya</button></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
