@@ -105,6 +105,7 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'lms' / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_MANIFEST_STRICT = False
 
 # --- Media Files ---
 MEDIA_URL = '/media/'
